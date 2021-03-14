@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "noEmit": true,
+    "target": "ES2015",
+    "moduleResolution": "node",
+    "strict": true,
+  }
+}
