@@ -1,6 +1,6 @@
-## TypeScript Playground Plugin
+## TypeScript Playground Plugin - Live Transformer
 
-My new plugin for the TypeScript playground.
+A plugin to create a typescript transformer live in the playground
 
 ## Running this plugin
 
