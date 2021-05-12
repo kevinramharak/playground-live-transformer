@@ -1,97 +1,135 @@
 import type { PlaygroundPlugin, PluginUtils } from "./vendor/playground"
 
-import { tabs as tabFactories } from './tabs';
+import { tabs } from './tabs';
+import { Sandbox } from "./vendor/sandbox";
 
-export default function makePlugin(utils: PluginUtils): PlaygroundPlugin {
-    const tabs = tabFactories.map(entry => entry(utils));
+type PluginFactory = (utils: PluginUtils) => PlaygroundPlugin;
+type Methods<T> = { [P in keyof T as T[P] extends Function | undefined ? P : never]: T[P] };
+type PluginHooks = Omit<Methods<PlaygroundPlugin>, 'data'>;
 
-    const data = {
-        tabs,
-        active: tabs[0],
-        tabContainer: document.createElement('div'),
+const config = {
+    /**
+     * Default playground tab behaviour is to reload the active tab if clicked on
+     */
+    reloadActiveTabOnClick: true,
+};
+
+/**
+ * based on https://github.com/microsoft/TypeScript-Website/blob/v2/packages/playground/src/
+ */
+function createTabManager(plugins: PluginFactory[], config: { namespace: string, utils: PluginUtils }): PluginHooks {
+    const { namespace, utils } = config;
+    const patchId = (id: string) => `${namespace}-${id}`;
+    
+    const tabs = plugins.map(factory => {
+        const plugin = factory(utils);
+        return plugin;
+    });
+
+    const $container = document.createElement('div');
+    let active: PlaygroundPlugin | undefined;
+
+    const activateTab = (newTab: PlaygroundPlugin, oldTab: PlaygroundPlugin | undefined, sandbox: Sandbox, $container: HTMLDivElement, $bar: HTMLDivElement) => {
+        const $$tabs = Array.from($bar.children) as HTMLElement[];
+        const oldTabButton = oldTab ? $$tabs.find(el => el.id === patchId(oldTab!.id)) : void 0;
+        const newTabButton = $$tabs.find(el => el.id === patchId(newTab.id))!;
+        
+        if (oldTab && oldTabButton) {
+            if (oldTab.willUnmount) {
+                oldTab.willUnmount(sandbox, $container);
+            }
+            oldTabButton.classList.remove("active")
+            oldTabButton.setAttribute("aria-selected", "false")
+            oldTabButton.setAttribute("tabindex", "-1")
+        }
+
+        // Wipe the sidebar
+        while ($container.firstChild) {
+            $container.removeChild($container.firstChild)
+        }
+
+        // Start booting up the new plugin
+        newTabButton.classList.add("active")
+        newTabButton.setAttribute("aria-selected", "true")
+        newTabButton.setAttribute("tabindex", "0")
+
+        // Tell the new plugin to start doing some work
+        if (newTab.willMount) newTab.willMount(sandbox, $container)
+        if (newTab.modelChanged) newTab.modelChanged(sandbox, sandbox.getModel(), $container)
+        if (newTab.modelChangedDebounce) newTab.modelChangedDebounce(sandbox, sandbox.getModel(), $container)
+        if (newTab.didMount) newTab.didMount(sandbox, $container)
+
+        // Let the previous plugin do any slow work after it's all done
+        if (oldTab && oldTab.didUnmount) oldTab.didUnmount(sandbox, $container)
     };
 
-    const id = 'playground-live-transformer';
-    const getTabId = (tabId: string) => `playground-plugin-tab-${id}-${tabId}`;
+    return {
+        willMount(sandbox, $root) {
+            const ds = utils.createDesignSystem($root);
+            const $bar = ds.createTabBar();
+            $root.appendChild($bar);
+            $root.appendChild($container);
+            const $$tabs: HTMLButtonElement[] = [];
+
+            const tabClicked: HTMLButtonElement['onclick'] = (event) => {
+                const oldTab = active;
+                let newTabButton = event.target as HTMLElement
+                // It could be a notification you clicked on
+                if (newTabButton.tagName === "DIV") {
+                    newTabButton = newTabButton.parentElement!; 
+                }
+                const newTab = tabs.find(tab => newTabButton.id.endsWith(tab.id))!;
+                activateTab(newTab, oldTab, sandbox, $container, $bar);
+                active = newTab;
+            };
+            
+            tabs.forEach(tab => {
+                const $tab = ds.createTabButton(tab.displayName);
+                $tab.id = patchId(tab.id);
+                $$tabs.push($tab);
+                $bar.appendChild($tab);
+
+                $tab.onclick = tabClicked;
+            });
+
+            if ($$tabs.length) {
+                $$tabs[0].onclick!({ target: $$tabs[0] } as any);
+            }
+        },
+        willUnmount(sandbox, _) {
+            if (active && active.willUnmount) {
+                active.willUnmount(sandbox, $container);
+            }
+        },
+        didMount(sandbox, _) {
+            if (active && active.didMount) {
+                active.didMount(sandbox, $container);
+            }
+        },
+        didUnmount(sandbox, _) {
+            if (active && active.didUnmount) {
+                active.didUnmount(sandbox, $container);
+            }
+        },
+        modelChanged(sandbox, model, _) {
+            if (active && active.modelChanged) {
+                active.modelChanged(sandbox, model, $container);
+            }
+        },
+        modelChangedDebounce(sandbox, model, _) {
+            if (active && active.modelChangedDebounce) {
+                active.modelChangedDebounce(sandbox, model, $container);
+            }
+        },
+    };
+}
+
+export default function makePlugin(utils: PluginUtils): PlaygroundPlugin {
+    const id = 'live-transformer'
 
     return {
         id,
         displayName: 'Live Transformer',
-        willMount: (sandbox, container) => {
-            // based on https://github.com/microsoft/TypeScript-website/blob/v2/packages/typescriptlang-org/src/components/workbench/plugins/docs.ts#L247
-            const ds = utils.createDesignSystem(container);
-            const $bar = ds.createTabBar();
-            const $tabs: HTMLElement[] = [];
-
-            tabs.forEach(entry => {
-                const $tab = ds.createTabButton(entry.displayName);
-                $tab.id = getTabId(entry.id);
-                $tabs.push($tab);
-                $tab.onclick = () => {  
-                    const ds = utils.createDesignSystem(data.tabContainer);
-                    
-                    if (data.active.willUnmount) {
-                        data.active.willUnmount(sandbox, data.tabContainer);
-                    }
-                    
-                    ds.clear();
-                    $tabs.forEach($tab => $tab.classList.remove('active'));
-
-                    if (data.active.didUnmount) {
-                        data.active.didUnmount(sandbox, data.tabContainer);
-                    }
-
-                    if (entry.willMount) {
-                        entry.willMount(sandbox, data.tabContainer);
-                    }
-
-                    $tab.classList.add('active');
-                    data.active = entry;
-                    
-                    if (data.active.didMount) {
-                        data.active.didMount(sandbox, data.tabContainer);
-                    }
-                };
-
-                $bar.appendChild($tab);
-            });
-            
-            container.appendChild($bar);
-            container.appendChild(data.tabContainer);
-
-            if (data.active) {
-                if (data.active.willMount) {
-                    data.active.willMount(sandbox, data.tabContainer);
-                }
-                const activeTab = document.querySelector(`#${getTabId(data.active.id)}`);
-                if (activeTab) {
-                    activeTab.classList.add('active');
-                }
-                if (data.active.didMount) {
-                    data.active.didMount(sandbox, data.tabContainer);
-                }
-            }
-        },
-        didMount: (sandbox, container) => {
-            if (data.active.didMount) {
-                data.active.didMount(sandbox, data.tabContainer);
-            }
-        },
-        willUnmount: (sandbox, container) => {
-            container.removeChild(data.tabContainer);
-            if (data.active.willUnmount) {
-                data.active.willUnmount(sandbox, data.tabContainer);
-            }
-        },
-        didUnmount: (sandbox, container) => {
-            if (data.active.didUnmount) {
-                data.active.didUnmount(sandbox, data.tabContainer);
-            }
-        },
-        modelChangedDebounce(sandbox, model, container) {
-            if (data.active.modelChangedDebounce) {
-                data.active.modelChangedDebounce(sandbox, model, data.tabContainer);
-            }
-        },
+        ...createTabManager(tabs, { namespace: id, utils }),
     };
 }

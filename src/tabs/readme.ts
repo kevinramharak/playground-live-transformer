@@ -9,8 +9,18 @@ This plugin allows you to write a TypeScript AST transformer in the playground a
 Press the button above to setup a template and use the 'Transform' tab to run your transformer.<br />
 <br />
 More resources can be found at <br/>
-- https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API <br />
-- https://github.com/madou/typescript-transformer-handbook <br />
+<ul>
+    <li>
+        <a href="https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API" target="_blank">
+            https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API
+        </a>
+    </li>
+    <li>
+        <a href="https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API" target="_blank">
+            https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API
+        </a>
+    </li>
+</ul>
 <br />
 Or come have a chat in the <a href="https://discord.gg/typescript" rel="noopener" target="_blank">TypeScript Community Discord.</a>
 <br />
@@ -37,9 +47,10 @@ const programTransformer = (program: ts.Program) => {
             const visitor = (node: ts.Node): ts.Node => {
                 if (ts.isBinaryExpression(node)) {
                     if (ts.isNumericLiteral(node.left) && ts.isNumericLiteral(node.right)) {
-                       // because we checked 'node.left' and 'node.right' we can (somewhat) safely assume the following type assertions
-                       // A great way to explore the AST is to use https://ts-ast-viewer.com/
-                       // It will show you everything you need to know when working with an typescript AST
+                        // A great way to explore the AST is to use https://ts-ast-viewer.com/
+                        // It will show you everything you need to know when working with an typescript AST
+                        // because we checked 'node.left' and 'node.right' we can (somewhat) safely assume the following type assertions
+                        // this is just an example of how you can use the type checker to hook into the type system
                         const lhs = checker.getTypeAtLocation(node.left) as ts.NumberLiteralType;
                         const rhs = checker.getTypeAtLocation(node.right) as ts.NumberLiteralType;
                         switch (node.operatorToken.kind) {
