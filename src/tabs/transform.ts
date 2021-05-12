@@ -2,8 +2,20 @@ import ts from 'typescript';
 import {} from 'ts-expose-internals';
 import { PlaygroundPlugin, PluginUtils } from "../vendor/playground";
 
+const lztring: any = (window as any).LZString;
+
 interface IPluginData {
 
+}
+
+function isTransformBlockStatement(sourceFileText: string, node: ts.Node) {
+    const comments = ts.getLeadingCommentRanges(sourceFileText, node.getFullStart()) || [];
+    const multiline = comments.filter(comment => comment.kind === ts.SyntaxKind.MultiLineCommentTrivia);
+    return multiline.some(range => {
+        const content = sourceFileText.slice(range.pos, range.end);
+        // https://regexr.com/5ohbm - check if there is a single line containing @transform
+        return /^[^\w]+@transform\s*$/gm.test(content);
+    });
 }
 
 /**
@@ -19,17 +31,9 @@ function createTransformerFactory(output: { blocks: ts.Block[], imports: ts.Impo
                     return;
                 }
                 if (ts.isBlock(node)) {
-                    
-                    const comments = ts.getLeadingCommentRanges(sourceFileText, node.getFullStart()) || [];
-                    const multiline = comments.filter(comment => comment.kind === ts.SyntaxKind.MultiLineCommentTrivia);
-                    if (multiline.some(range => {
-                        const content = sourceFileText.slice(range.pos, range.end);
-                        // https://regexr.com/5ohbm - check if there is a single line containing @transform
-                        return /^[^\w]+@transform\s*$/gm.test(content);
-                    })) {
-                        output.blocks.push(node);
-                        return;
-                    };
+                    if (isTransformBlockStatement(sourceFileText, node)) {
+                    output.blocks.push(node);
+                    }
                 }
                 return ts.visitEachChild(node, visitor, context);
             }
@@ -88,6 +92,41 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
 
             const $code = ds.code('');
             $code.innerHTML = '// The transformer output will appear here';
+
+            const $astExplorer = ds.button({
+                label: 'Open in TS AST Viewer',
+                async onclick() {
+                    const compilerOptions = sandbox.getCompilerOptions();
+                    const fs = await tsvfs.createDefaultMapFromCDN(compilerOptions, ts.version, true, ts);
+                    const system = tsvfs.createSystem(fs);
+                    const { compilerHost: host, updateFile } = tsvfs.createVirtualCompilerHost(system, compilerOptions, ts);
+                    host.writeFile(sandbox.filepath, sandbox.getText(), false);
+
+                    const program = ts.createProgram({
+                        rootNames: [sandbox.filepath],
+                        options: compilerOptions,
+                        host,
+                    });
+
+                    const sourceFile = program.getSourceFile(sandbox.filepath)!;
+                    const sourceFileText = sourceFile.getFullText();
+                    const blocks = sourceFile.statements.filter(node => {
+                        return isTransformBlockStatement(sourceFileText, node);
+                    });
+
+                    const writer = ts.createTextWriter(host.getNewLine());
+                    const printer = ts.createPrinter();
+                    blocks.forEach(block => printer.writeNode(ts.EmitHint.Unspecified, block, sourceFile, writer));
+                    const source = writer.getText();
+                    writer.clear();
+                    const base64Source = lztring.compressToBase64(source);
+
+                    open(`https://ts-ast-viewer.com/#code/${base64Source}`, '_blank');
+                }
+            });
+
+            $astExplorer.after($code.parentElement!);
+            $astExplorer.setAttribute('style', 'display: block; margin-bottom: 16px;');
             
             const $button = ds.button({
                 label: 'Run the transformer',
