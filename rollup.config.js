@@ -1,7 +1,9 @@
-import typescript from '@rollup/plugin-typescript'
-import node from '@rollup/plugin-node-resolve'
-import commonjs from '@rollup/plugin-commonjs'
-import json from '@rollup/plugin-json'
+import typescript from '@rollup/plugin-typescript';
+import node from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
+import { string } from 'rollup-plugin-string';
+import markdown from '@jackfranklin/rollup-plugin-markdown';
 import externalGlobals from "rollup-plugin-external-globals";
 
 // You can have more root bundles by extending this array
@@ -17,7 +19,7 @@ export default rootFiles.map(name => {
         external: ['typescript'],
         output: {
             paths: {
-                "typescript":"typescript-sandbox/index",
+                "typescript": "typescript-sandbox/index",
             },
             name,
             dir: 'dist',
@@ -25,11 +27,13 @@ export default rootFiles.map(name => {
             sourcemap: process.env.NODE_ENV === 'production' ? false : 'inline',
         },
         plugins: [
-            typescript({ tsconfig: 'tsconfig.json' }),
+            string({ include: '**/*.ts.tpl'}),
+            markdown(),
+            typescript({ tsconfig: 'tsconfig.json' }, { exclude: ['**/*.ts.tpl']}),
             externalGlobals({ typescript: "window.ts" }),
             commonjs(),
             node(),
-            json()
+            json(),
         ],
     }
 

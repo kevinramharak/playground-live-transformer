@@ -22,6 +22,7 @@
     "prepack": "yarn build"
   },
   "devDependencies": {
+    "@jackfranklin/rollup-plugin-markdown": "^0.3.0",
     "@rollup/plugin-commonjs": "^11.0.2",
     "@rollup/plugin-json": "^4.0.2",
     "@rollup/plugin-node-resolve": "^7.1.0",
@@ -32,6 +33,7 @@
     "node-fetch": "^2.6.0",
     "rollup": "^1.31.0",
     "rollup-plugin-external-globals": "^0.6.1",
+    "rollup-plugin-string": "^3.0.0",
     "serve": "^11.3.0",
     "ts-expose-internals": "latest",
     "typescript": "latest"
