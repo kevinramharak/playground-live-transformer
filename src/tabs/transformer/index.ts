@@ -1,8 +1,9 @@
 
 import ts from 'typescript';
-import { createButton, createHtmlContainer, createMarkdownContainer } from '../../util/html';
+import { createButton, createHtmlContainer } from '../../util/html';
 import { colorize } from '../../util/monaco';
 import { createTransformerModule } from '../../util/transformer-host';
+import { CheckerTransformer, CompilerOptionsTransformer, ConfigTransformer, NodeTransformer, ProgramTransformer, RawTransformer } from '../../util/transformer-types';
 import { openSourceCodeInTsAstViewer } from '../../util/ts-ast-viewer';
 import type { PlaygroundPlugin, PluginUtils } from "../../vendor/playground";
 import type { Sandbox } from '../../vendor/sandbox';
@@ -31,22 +32,6 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
         return { fs, system, ...tsvfs.createVirtualCompilerHost(system, compilerOptions, ts) };
     }
 
-    /**
-     * Attempt to minimize the blocking time used by the compiler
-     */
-    const minimalCompilerOptions: Partial<ts.CompilerOptions> = {
-        // disable sourcemaps and declaration
-        sourceMap: false,
-        declaration: false,
-        // see: https://www.typescriptlang.org/tsconfig#Completeness_6257
-        skipDefaultLibCheck: true,
-        skipLibCheck: true,
-        // see: https://www.typescriptlang.org/tsconfig#Type_Checking_6248
-        allowUnreachableCode: true,
-        allowUnusedLabels: true,
-        strict: false,
-    };
-
     return {
         id: 'transform',
         displayName: 'Transform',
@@ -69,7 +54,7 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
 
                     const program = ts.createProgram({
                         rootNames: [sandbox.filepath],
-                        options: minimalCompilerOptions,
+                        options: compilerOptions,
                         host,
                     });
 
@@ -90,7 +75,11 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
                  */
                 async click() {
                     try {
-                        const compilerOptions = sandbox.getCompilerOptions();
+                        const compilerOptions: ts.CompilerOptions = {
+                            ...sandbox.getCompilerOptions(),
+                            target: ts.ScriptTarget.ESNext,
+                            module: ts.ModuleKind.CommonJS,
+                        };
                         const { compilerHost: host, fs } = await createCompilerHost(tsvfs, compilerOptions);
                         host.writeFile(sandbox.filepath, sandbox.getText(), false);
 
@@ -112,11 +101,7 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
                         // compile both files as a seperate program
                         const splitProgram = ts.createProgram({
                             rootNames: [TRANSFORM_BLOCKS_FILE_NAME, TRANSFORMER_FILE_NAME],
-                            options: {
-                                target: ts.ScriptTarget.ESNext,
-                                module: ts.ModuleKind.CommonJS,
-                                ...minimalCompilerOptions,
-                            },
+                            options: compilerOptions,
                             host,
                             oldProgram: program,
                         });
@@ -126,18 +111,67 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
                         splitProgram.emit(transformerSourceFile);
                         const transformerSource = fs.get(TRANSFORMER_FILE_NAME.replace(/\.tsx?$/, '.js')) || '';
 
-                        // TODO: use the typechecker to see what type of transformer it is
-                        // support: https://github.com/nonara/ts-patch#source-transformer-signatures
-                        // and: https://github.com/cevek/ttypescript#pluginconfigtype
-                        const evaluated = createTransformerModule(sourceFile.statements.filter(statement => ts.isImportDeclaration(statement)) as ts.ImportDeclaration[], transformerSource) as { default: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile> };
+                        const evaluated = createTransformerModule(sourceFile.statements.filter(statement => ts.isImportDeclaration(statement)) as ts.ImportDeclaration[], transformerSource);
 
-                        if (typeof evaluated.default !== 'function') {
-                            throw new TypeError('expected the default export to be the program transformer factory, but the default export is not a function');
+                        let transformer: ProgramTransformer;
+                        switch (evaluated.type || 'node') {
+                            case 'checker': {
+                                transformer = (program: ts.Program, config: any) => {
+                                    return (evaluated.default as CheckerTransformer)(program.getTypeChecker(), config);
+                                };
+                                break;
+                            }
+                            case 'compilerOptions': {
+                                transformer = (program: ts.Program, config: any) => {
+                                    return (evaluated.default as CompilerOptionsTransformer)(program.getCompilerOptions(), config);
+                                };
+                                break;
+                            }
+                            case 'config': {
+                                transformer = (program: ts.Program, config: any) => {
+                                    return (evaluated.default as ConfigTransformer)(config);
+                                };
+                                break;
+                            }
+                            case 'node': {
+                                transformer = (program: ts.Program, config: any) => {
+                                    const checker = program.getTypeChecker();
+                                    return (context) => {
+                                        return (sourceFile) => {
+                                            const visitor = (node: ts.Node): ts.Node => {
+                                                ts.visitEachChild(node, visitor, context);
+                                                return (evaluated.default as NodeTransformer)(node, {
+                                                    checker,
+                                                    context,
+                                                    program,
+                                                    sourceFile,
+                                                });
+                                            }
+                                            return ts.visitNode(sourceFile, visitor);
+                                        }
+                                    };
+                                };
+                                break;
+                            }
+                            case 'program': {
+                                transformer = evaluated.default as ProgramTransformer;
+                                break;
+                            }
+                            case 'raw': {;
+                                transformer = (program: ts.Program, config: any) => {
+                                    return (evaluated.default as RawTransformer);
+                                };
+                                break;
+                            }
+                            default: {
+                                throw new TypeError(`'${evaluated.type}' is an invalid transformer type`);
+                                break;
+                            }
                         }
 
                         const transformBlocksSourceFile = splitProgram.getSourceFile(TRANSFORM_BLOCKS_FILE_NAME)!;
                         const transformationResult = ts.transform(transformBlocksSourceFile, [
-                            evaluated.default(splitProgram),
+                            transformer(splitProgram, evaluated.config),
                         ], compilerOptions);
 
                         const transformBlocksResultFile = transformationResult.transformed[0];
@@ -151,6 +185,7 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
                         });
                     } catch (e) {
                         if (e instanceof Error) {
+                            console.error(e);
                             $code.innerText = e.stack || '';
                         } else if (e != null) {
                             $code.innerText = (e as any).toString();

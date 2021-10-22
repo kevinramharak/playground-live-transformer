@@ -1,7 +1,11 @@
 
 import ts from 'typescript';
+import { CheckerTransformer, CompilerOptionsTransformer, ConfigTransformer, NodeTransformer, ProgramTransformer, RawTransformer } from './transformer-types';
 
-export function createTransformerModule(imports: ts.ImportDeclaration[], code: string) {
+export type TransformerType = 'program' | 'config' | 'checker' | 'compilerOptions' | 'raw' | 'node';
+export type Transformer = ProgramTransformer | ConfigTransformer | CheckerTransformer | CompilerOptionsTransformer | RawTransformer | NodeTransformer;
+
+export function createTransformerModule<T extends Transformer = Transformer>(imports: ts.ImportDeclaration[], code: string): { default: T, type?: TransformerType, config?: any } {
     const tsImport = imports.find(importDeclaration => (importDeclaration.moduleSpecifier as ts.StringLiteral).text === 'typescript');
 
     if (!tsImport) {
@@ -27,8 +31,8 @@ export function createTransformerModule(imports: ts.ImportDeclaration[], code: s
     try {
         const module = { exports: {} };
         const closure = new Function(tsImport.importClause.name.text, 'module', 'exports', code);
-        closure(ts, module, module.exports);
-        return module.exports;
+        closure(ts, module, module.exports, () => {});
+        return module.exports as any;
     } catch (e) {
         console.error(e);
         throw e;

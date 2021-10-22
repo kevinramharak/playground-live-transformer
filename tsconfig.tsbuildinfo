@@ -241,9 +241,14 @@
         "signature": "61f747580626a4cbf4c451c59e5fb24245f984d9e93195493e3126e598170c49",
         "affectsGlobalScope": false
       },
+      "./src/util/transformer-types.ts": {
+        "version": "c5b8dec4bb572fa8534a5d9490f454263b29ca46b5a64896c2256296beddda2b",
+        "signature": "aef2f8a8417928e359f49aff6676462b31561cf0ea59bf7b92791eca47eb3390",
+        "affectsGlobalScope": false
+      },
       "./src/util/transformer-host.ts": {
-        "version": "96b451ade1a43121c3794bce7ea642c1d39253b091f1e2595da11a79e1a0cf84",
-        "signature": "401dfc8babdfa7e4bafccc9a41e6e7472118279f4ece23ea91b1b40066f96120",
+        "version": "379e956f76b6330826625e3b20672f6876607d4a3bd27a33dd3fe4eb6272ba67",
+        "signature": "d4bb62423abe94fe81a37217d58fc1d8907f70cded9ae20cedbbc33b5e477ad8",
         "affectsGlobalScope": false
       },
       "./src/util/lzstring.ts": {
@@ -257,7 +262,7 @@
         "affectsGlobalScope": false
       },
       "./src/tabs/transformer/index.ts": {
-        "version": "c2ce1500d8a22c22c42a82164eab66faa148356a0b76573b93343a66ee082ad0",
+        "version": "f319a269cd6c8d39d927e45f6801f0be7bac4941db17ae330d625613cdeb60ba",
         "signature": "909c3b4811bec1c4e04c760afd8a262631807bc56db32a582ace965b6d3fc121",
         "affectsGlobalScope": false
       },
@@ -803,6 +808,7 @@
         "./src/util/html.ts",
         "./src/util/monaco.ts",
         "./src/util/transformer-host.ts",
+        "./src/util/transformer-types.ts",
         "./src/util/ts-ast-viewer.ts",
         "./src/vendor/playground.d.ts",
         "./src/vendor/sandbox.d.ts"
@@ -815,6 +821,10 @@
         "./src/vendor/sandbox.d.ts"
       ],
       "./src/util/transformer-host.ts": [
+        "./node_modules/typescript/lib/typescript.d.ts",
+        "./src/util/transformer-types.ts"
+      ],
+      "./src/util/transformer-types.ts": [
         "./node_modules/typescript/lib/typescript.d.ts"
       ],
       "./src/util/ts-ast-viewer.ts": [
@@ -1109,6 +1119,10 @@
         "./src/vendor/playground.d.ts"
       ],
       "./src/util/transformer-host.ts": [
+        "./node_modules/typescript/lib/typescript.d.ts",
+        "./src/util/transformer-types.ts"
+      ],
+      "./src/util/transformer-types.ts": [
         "./node_modules/typescript/lib/typescript.d.ts"
       ],
       "./src/vendor/ds/createdesignsystem.d.ts": [
@@ -1243,6 +1257,7 @@
       "./src/util/monaco.ts",
       "./src/util/tab-manager.ts",
       "./src/util/transformer-host.ts",
+      "./src/util/transformer-types.ts",
       "./src/util/ts-ast-viewer.ts",
       "./src/vendor/ds/createdesignsystem.d.ts",
       "./src/vendor/playground.d.ts",
@@ -1666,6 +1681,10 @@
       ],
       [
         "./src/util/transformer-host.ts",
+        1
+      ],
+      [
+        "./src/util/transformer-types.ts",
         1
       ],
       [
