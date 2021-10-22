@@ -138,13 +138,13 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
                                     return (context) => {
                                         return (sourceFile) => {
                                             const visitor = (node: ts.Node): ts.Node => {
-                                                node = (evaluated.default as NodeTransformer)(node, {
+                                                node = ts.visitEachChild(node, visitor, context)
+                                                return (evaluated.default as NodeTransformer)(node, {
                                                     checker,
                                                     context,
                                                     program,
                                                     sourceFile,
                                                 });
-                                                return ts.visitEachChild(node, visitor, context);
                                             }
                                             return ts.visitNode(sourceFile, visitor);
                                         }
