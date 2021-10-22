@@ -77,7 +77,6 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
                     try {
                         const compilerOptions: ts.CompilerOptions = {
                             ...sandbox.getCompilerOptions(),
-                            target: ts.ScriptTarget.ESNext,
                             module: ts.ModuleKind.CommonJS,
                         };
                         const { compilerHost: host, fs } = await createCompilerHost(tsvfs, compilerOptions);
@@ -139,13 +138,13 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
                                     return (context) => {
                                         return (sourceFile) => {
                                             const visitor = (node: ts.Node): ts.Node => {
-                                                ts.visitEachChild(node, visitor, context);
-                                                return (evaluated.default as NodeTransformer)(node, {
+                                                node = (evaluated.default as NodeTransformer)(node, {
                                                     checker,
                                                     context,
                                                     program,
                                                     sourceFile,
                                                 });
+                                                return ts.visitEachChild(node, visitor, context);
                                             }
                                             return ts.visitNode(sourceFile, visitor);
                                         }
