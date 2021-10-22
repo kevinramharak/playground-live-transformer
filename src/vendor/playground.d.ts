@@ -61,6 +61,7 @@ export declare const setupPlayground: (sandbox: Sandbox, monaco: Monaco, config:
         requireURL: (path: string) => string;
         react: typeof React;
         createDesignSystem: (container: Element) => {
+            container: Element;
             clear: () => void;
             code: (code: string) => HTMLElement;
             title: (title: string) => HTMLElement;
@@ -80,7 +81,9 @@ export declare const setupPlayground: (sandbox: Sandbox, monaco: Monaco, config:
                 keepValueAcrossReloads?: true | undefined;
                 isEnabled?: ((input: HTMLInputElement) => boolean) | undefined;
             }) => HTMLFormElement;
-            createASTTree: (node: import("typescript").Node) => HTMLDivElement;
+            createASTTree: (node: import("typescript").Node, settings?: {
+                closedByDefault?: true | undefined;
+            } | undefined) => HTMLDivElement;
             button: (settings: {
                 label: string;
                 onclick?: ((ev: MouseEvent) => void) | undefined;
@@ -88,6 +91,7 @@ export declare const setupPlayground: (sandbox: Sandbox, monaco: Monaco, config:
             createTabBar: () => HTMLDivElement;
             createTabButton: (text: string) => HTMLButtonElement;
             declareRestartRequired: (i?: ((key: string) => string) | undefined) => void;
+            createSubDesignSystem: () => any;
         };
         flashHTMLElement: (element: HTMLElement) => void;
         setNotifications: (pluginID: string, amount: number) => void;
