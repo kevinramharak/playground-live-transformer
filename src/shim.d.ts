@@ -14,3 +14,8 @@ declare module '*.ts.tpl' {
     const contents: string;
     export default contents;
 }
+
+declare module '*.html.tpl' {
+    const contents: string;
+    export default contents;
+}

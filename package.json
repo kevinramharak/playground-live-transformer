@@ -14,6 +14,7 @@
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "compile": "tsc",
+    "typecheck": "tsc --watch --incremental",
     "bootstrap": "node scripts/getDTS.js",
     "prepublish": "yarn build",
     "postinstall": "yarn build",

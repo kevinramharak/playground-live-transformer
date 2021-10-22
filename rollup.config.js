@@ -27,7 +27,7 @@ export default rootFiles.map(name => {
             sourcemap: process.env.NODE_ENV === 'production' ? false : 'inline',
         },
         plugins: [
-            string({ include: '**/*.ts.tpl'}),
+            string({ include: '**/*.tpl'}),
             markdown(),
             typescript({ tsconfig: 'tsconfig.json' }, { exclude: ['**/*.ts.tpl']}),
             externalGlobals({ typescript: "window.ts" }),
