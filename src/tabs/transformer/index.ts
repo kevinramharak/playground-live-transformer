@@ -1,4 +1,5 @@
 
+import type { editor } from 'monaco-editor';
 import ts from 'typescript';
 import { createButton, createHtmlContainer } from '../../util/html';
 import { colorize } from '../../util/monaco';
@@ -25,6 +26,8 @@ function isTransformBlock(node: ts.Node) {
 export function createTransform(utils: PluginUtils): PlaygroundPlugin {
     const TRANSFORM_BLOCKS_FILE_NAME = '/blocks.ts';
     const TRANSFORMER_FILE_NAME = '/transformer.ts';
+    const RUN_TRANSFORMER_BUTTON_ID = 'run-transformer';
+    const RUN_BUTTON_ID = 'run-button';
 
     async function createCompilerHost(tsvfs: Sandbox['tsvfs'], compilerOptions: ts.CompilerOptions) {
         const fs = await tsvfs.createDefaultMapFromCDN(compilerOptions, ts.version, true, ts);
@@ -32,9 +35,30 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
         return { fs, system, ...tsvfs.createVirtualCompilerHost(system, compilerOptions, ts) };
     }
 
+    let runButton: HTMLButtonElement | null = null;
+    let oldRunButtonClickHandler: HTMLButtonElement['onclick'] = null;
+    const listener = (event: Event) => {
+        const runTransformerButton = document.getElementById(RUN_TRANSFORMER_BUTTON_ID);
+        if (runTransformerButton) {
+            runTransformerButton.click();
+        }
+    };
+
     return {
         id: 'transform',
         displayName: 'Transform',
+        didMount(sandbox, container) {
+            runButton = document.getElementById(RUN_BUTTON_ID) as HTMLButtonElement;
+            oldRunButtonClickHandler = runButton.onclick;
+            if (runButton) {
+                runButton.onclick = listener;
+            }
+        },
+        didUnmount(sandbox, container) {
+            if (runButton && runButton.onclick === listener) {
+                runButton.onclick = oldRunButtonClickHandler;
+            }
+        },
         willMount(sandbox, container) {
             const ds = utils.createDesignSystem(container);
             const { tsvfs } = sandbox;
@@ -191,13 +215,13 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
                         }
                     }
                 }
-            });
+            }, RUN_TRANSFORMER_BUTTON_ID);
 
             const $contents = createHtmlContainer(content, {
                 'transformer-output': $code.parentNode! as HTMLElement,
                 'open-in-ts-ast-viewer': $openInTsAstExplorer,
                 'run-transformer': $runTransformer,
-            })
+            });
 
             container.appendChild($contents);
         },

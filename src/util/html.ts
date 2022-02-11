@@ -19,7 +19,7 @@ export function createHtmlContainer(html: string, replaceRefs?: Record<string, E
     return $container;
 }
 
-export function createButton(label?: string, eventListeners?: Record<string, (event?: Event) => void>) {
+export function createButton(label?: string, eventListeners?: Record<string, (event?: Event) => void>, id?: string) {
     const $button = document.createElement('button');
     if (label) {
         $button.innerText = label;
@@ -29,6 +29,9 @@ export function createButton(label?: string, eventListeners?: Record<string, (ev
         Object.entries(eventListeners).forEach(([name, listener]) => {
             $button.addEventListener(name, listener);
         });
+    }
+    if (id) {
+        $button.id = id;
     }
     return $button;
 }
