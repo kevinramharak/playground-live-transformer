@@ -2,9 +2,11 @@
 export function injectGlobalStyles() {
     const $style = document.createElement('style');
     $style.innerHTML = `
-#playground-container .playground-sidebar .playground-plugin-tabview {
+
+    #playground-container .playground-sidebar .playground-plugin-tabview {
     margin-bottom: 0;
 }
+
 #playground-container .playground-sidebar .playground-plugin-container pre {
     padding-top: 4px;
     padding-bottom: 4px;
@@ -18,6 +20,9 @@ export function injectGlobalStyles() {
 
 .dark-theme .playground-sidebar .playground-plugin-container .fluid-button:hover {
     background-color: var(--raised-background);
+}
+
+.playground-sidebar .playground-plugin-container .fluid-button:hover {
     cursor: pointer;
 }
 `;
