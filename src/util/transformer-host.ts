@@ -9,29 +9,31 @@ export function createTransformerModule<T extends Transformer = Transformer>(imp
     const tsImport = imports.find(importDeclaration => (importDeclaration.moduleSpecifier as ts.StringLiteral).text === 'typescript');
 
     if (!tsImport) {
-        throw new Error(`missing an import declaration for 'typescript'`);
+        throw new Error(`missing an import declaration for 'typescript'. your code requires a 'import ts from "typescript"'`);
     }
 
     if (!tsImport.importClause) {
-        throw new Error(`import 'typescript' needs an import clause`);
+        throw new Error(`import 'typescript' needs an import clause. invalid example 'import "typescript"'`);
     }
 
     if (tsImport.importClause.isTypeOnly) {
-        throw new Error(`cannot import 'typescript' as type only`);
+        throw new Error(`cannot import 'typescript' as type only. invalid example 'import type ts from "typescript"'`);
     }
 
     if (!tsImport.importClause.name) {
-        throw new Error(`the 'typescript' import needs to be a named import`);
+        throw new Error(`the 'typescript' import needs to be a named import. for example: 'import ts from "typescript"'`);
     }
 
     if (tsImport.importClause.namedBindings) {
-        throw new Error(`named imports for 'typescript' are not supported`);
+        throw new Error(`named imports for the 'typescript' module are not supported. invalid example: 'import { namedThing } from "typescript"'`);
     }
 
     try {
         const module = { exports: {} };
-        const closure = new Function(tsImport.importClause.name.text, 'module', 'exports', code);
-        closure(ts, module, module.exports, () => {});
+        const injectedParameterNames = [tsImport.importClause.name.text];
+        const injectedParameters = [ts];
+        const closure = new Function('module', 'exports', '__filename', '__dirname', ...injectedParameterNames, code);
+        closure(module, module.exports, 'index.ts', '/', ...injectedParameters);
         return module.exports as any;
     } catch (e) {
         console.error(e);
