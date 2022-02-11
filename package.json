@@ -36,8 +36,8 @@
     "rollup-plugin-external-globals": "^0.6.1",
     "rollup-plugin-string": "^3.0.0",
     "serve": "^11.3.0",
-    "ts-expose-internals": "latest",
-    "typescript": "latest"
+    "ts-expose-internals": "^4.5.5",
+    "typescript": "^4.5.5"
   },
   "dependencies": {
     "tslib": "^1.10.0"
