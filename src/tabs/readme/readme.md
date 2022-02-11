@@ -2,7 +2,7 @@
 ### Live Transformer
 This plugin allows you to prototype a TypeScript AST transformer in the playground.
 
-Use `Transform` tab to run your transformer and use other usefull development tools.
+Use `Transform` tab to run your transformer and use other useful development tools.
 
 <p data-ref="insert-template-button"></p>
 
