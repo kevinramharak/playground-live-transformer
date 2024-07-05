@@ -2,13 +2,13 @@ import { TypeScriptWorker } from "./tsWorker";// import { TypeScriptWorker } fro
 // import lzstring from "./vendor/lzstring.min";
 
 import * as tsvfs from './typescript-vfs';
-declare type CompilerOptions = import("monaco-editor").languages.typescript.CompilerOptions;
-declare type Monaco = typeof import("monaco-editor");
+type CompilerOptions = import("monaco-editor").languages.typescript.CompilerOptions;
+type Monaco = typeof import("monaco-editor");
 /**
  * These are settings for the playground which are the equivalent to props in React
  * any changes to it should require a new setup of the playground
  */
-export declare type SandboxConfig = {
+export type SandboxConfig = {
     /** The default source code for the playground */
     text: string;
     /** @deprecated */
@@ -94,9 +94,28 @@ export declare const createTypeScriptSandbox: (partialConfig: Partial<SandboxCon
             groupEnd: (...args: any[]) => void;
         };
         domID: string;
+    } | {
+        text: string;
+        useJavaScript?: boolean | undefined;
+        filetype: "js" | "ts" | "d.ts";
+        compilerOptions: CompilerOptions;
+        monacoSettings?: import("monaco-editor").editor.IEditorOptions | undefined;
+        acquireTypes: boolean;
+        supportTwoslashCompilerOptions: boolean;
+        suppressAutomaticallyGettingDefaultText?: true | undefined;
+        suppressAutomaticallyGettingCompilerFlags?: true | undefined;
+        customTypeScriptWorkerPath?: string | undefined;
+        logger: {
+            log: (...args: any[]) => void;
+            error: (...args: any[]) => void;
+            groupCollapsed: (...args: any[]) => void;
+            groupEnd: (...args: any[]) => void;
+        };
+        elementToAppend?: HTMLElement | undefined;
+        domID: string;
     };
     /** A list of TypeScript versions you can use with the TypeScript sandbox */
-    supportedVersions: readonly ["4.5.0-beta", "4.4.4", "4.3.5", "4.2.3", "4.1.5", "4.0.5", "3.9.7", "3.8.3", "3.7.5", "3.6.3", "3.5.1", "3.3.3", "3.1.6", "3.0.1", "2.8.1", "2.7.2", "2.4.1"];
+    supportedVersions: readonly ["5.5.2", "5.4.5", "5.3.3", "5.2.2", "5.1.6", "5.0.4", "4.9.5", "4.8.4", "4.7.4", "4.6.4", "4.5.5", "4.4.4", "4.3.5", "4.2.3", "4.1.5", "4.0.5", "3.9.7", "3.8.3", "3.7.5", "3.6.3", "3.5.1", "3.3.3", "3.1.6", "3.0.1", "2.8.1", "2.7.2", "2.4.1"];
     /** The monaco editor instance */
     editor: import("monaco-editor").editor.IStandaloneCodeEditor;
     /** Either "typescript" or "javascript" depending on your config */
@@ -108,7 +127,7 @@ export declare const createTypeScriptSandbox: (partialConfig: Partial<SandboxCon
     /** A copy of require("@typescript/vfs") this can be used to quickly set up an in-memory compiler runs for ASTs, or to get complex language server results (anything above has to be serialized when passed)*/
     tsvfs: typeof tsvfs;
     /** Get all the different emitted files after TypeScript is run */
-    getEmitResult: () => Promise<import("typescript").EmitOutput>;
+    getEmitResult: (emitOnlyDtsFiles?: boolean, forceDtsEmit?: boolean) => Promise<import("typescript").EmitOutput>;
     /** Gets just the JavaScript for your sandbox, will transpile if in TS only */
     getRunnableJS: () => Promise<string>;
     /** Gets the DTS output of the main code in the editor */
@@ -138,7 +157,7 @@ export declare const createTypeScriptSandbox: (partialConfig: Partial<SandboxCon
      * TODO: It would be good to create an easy way to have a single program instance which is updated for you
      * when the monaco model changes.
      */
-    setupTSVFS: (fsMapAdditions?: Map<string, string> | undefined) => Promise<{
+    setupTSVFS: (fsMapAdditions?: Map<string, string>) => Promise<{
         program: import("typescript").Program;
         system: import("typescript").System;
         host: {
@@ -261,5 +280,5 @@ export declare const createTypeScriptSandbox: (partialConfig: Partial<SandboxCon
     /** Adds a file to the vfs used by the editor */
     addLibraryToRuntime: (code: string, _path: string) => void;
 };
-export declare type Sandbox = ReturnType<typeof createTypeScriptSandbox>;
+export type Sandbox = ReturnType<typeof createTypeScriptSandbox>;
 export {};

@@ -1,6 +1,6 @@
 import type { Sandbox } from "../sandbox";
 import type { DiagnosticRelatedInformation, Node } from "typescript";
-export declare type LocalStorageOption = {
+export type LocalStorageOption = {
     blurb: string;
     flag: string;
     display: string;
@@ -9,11 +9,11 @@ export declare type LocalStorageOption = {
     requireRestart?: true;
     onchange?: (newValue: boolean) => void;
 };
-export declare type OptionsListConfig = {
+export type OptionsListConfig = {
     style: "separated" | "rows";
     requireRestart?: true;
 };
-export declare type DesignSystem = ReturnType<ReturnType<typeof createDesignSystem>>;
+export type DesignSystem = ReturnType<ReturnType<typeof createDesignSystem>>;
 export declare const createDesignSystem: (sandbox: Sandbox) => (container: Element) => {
     /** The element of the design system */
     container: Element;
@@ -35,7 +35,7 @@ export declare const createDesignSystem: (sandbox: Sandbox) => (container: Eleme
      */
     listDiags: (model: import("monaco-editor").editor.ITextModel, diags: DiagnosticRelatedInformation[]) => HTMLUListElement;
     /** Lets you remove the hovers from listDiags etc */
-    clearDeltaDecorators: (force?: true | undefined) => void;
+    clearDeltaDecorators: (force?: true) => void;
     /** Shows a single option in local storage (adds an li to the container BTW) */
     localStorageOption: (setting: LocalStorageOption) => HTMLLIElement;
     /** Uses localStorageOption to create a list of options */
@@ -52,19 +52,19 @@ export declare const createDesignSystem: (sandbox: Sandbox) => (container: Eleme
     }) => HTMLFormElement;
     /** Renders an AST tree */
     createASTTree: (node: Node, settings?: {
-        closedByDefault?: true | undefined;
-    } | undefined) => HTMLDivElement;
+        closedByDefault?: true;
+    }) => HTMLDivElement;
     /** Creates an input button */
     button: (settings: {
         label: string;
-        onclick?: ((ev: MouseEvent) => void) | undefined;
+        onclick?: (ev: MouseEvent) => void;
     }) => HTMLInputElement;
     /** Used to re-create a UI like the tab bar at the top of the plugins section */
     createTabBar: () => HTMLDivElement;
     /** Used with createTabBar to add buttons */
     createTabButton: (text: string) => HTMLButtonElement;
     /** A general "restart your browser" message  */
-    declareRestartRequired: (i?: ((key: string) => string) | undefined) => void;
+    declareRestartRequired: (i?: (key: string) => string) => void;
     /** Create a new Design System instance and add it to the container. You'll need to cast
      * this after usage, because otherwise the type-system circularly references itself
      */

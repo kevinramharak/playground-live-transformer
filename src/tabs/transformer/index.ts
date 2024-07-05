@@ -32,7 +32,10 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
     async function createCompilerHost(tsvfs: Sandbox['tsvfs'], compilerOptions: ts.CompilerOptions) {
         const fs = await tsvfs.createDefaultMapFromCDN(compilerOptions, ts.version, true, ts);
         const system = tsvfs.createSystem(fs);
-        return { fs, system, ...tsvfs.createVirtualCompilerHost(system, compilerOptions, ts) };
+        const host = { fs, system, ...tsvfs.createVirtualCompilerHost(system, compilerOptions, ts) };
+        const readFile = host.system.readFile;
+        host.system.readFile = (...args) => readFile.apply(host.compilerHost, args) ?? '';
+        return host;
     }
 
     let runButton: HTMLButtonElement | null = null;
@@ -74,20 +77,26 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
                 async click() {
                     const compilerOptions = sandbox.getCompilerOptions();
                     const { compilerHost: host } = await createCompilerHost(tsvfs, compilerOptions);
-                    host.writeFile(sandbox.filepath, sandbox.getText(), false);
+                    host.writeFile(sandbox.filepath, sandbox.getText(), false, console.warn);
 
-                    const program = ts.createProgram({
-                        rootNames: [sandbox.filepath],
-                        options: compilerOptions,
-                        host,
-                    });
+                    try {
+                        const program = ts.createProgram({
+                            rootNames: [sandbox.filepath],
+                            options: compilerOptions,
+                            host,
+                        });
 
-                    const sourceFile = program.getSourceFile(sandbox.filepath)!;
-                    const blocks = sourceFile.statements.filter(isTransformBlock);
+                        const sourceFile = program.getSourceFile(sandbox.filepath)!;
+                        const blocks = sourceFile.statements.filter(isTransformBlock);
 
-                    const printer = ts.createPrinter();
-                    const source = printer.printList(ts.ListFormat.SourceFileStatements, blocks as unknown as ts.NodeArray<ts.Statement>, sourceFile);
-                    openSourceCodeInTsAstViewer(source);
+                        const printer = ts.createPrinter();
+                        const source = printer.printList(ts.ListFormat.SourceFileStatements, blocks as unknown as ts.NodeArray<ts.Statement>, sourceFile);
+                        openSourceCodeInTsAstViewer(source);
+                    } catch (e) {
+                        if (e instanceof Error) {
+                            console.error(e);
+                        }
+                    }
                 }
             });
 
@@ -170,7 +179,7 @@ export function createTransform(utils: PluginUtils): PlaygroundPlugin {
                                                     sourceFile,
                                                 });
                                             }
-                                            return ts.visitNode(sourceFile, visitor);
+                                            return ts.visitNode(sourceFile, visitor) as ts.SourceFile;
                                         }
                                     };
                                 };
